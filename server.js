@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 
-const METALS_KEY = process.env.METALS_API_KEY;
+const METALS_KEY = process.env.123188317eb03ef0d291147ee03ca28f;
 
 let metalsCache = { ts: 0, data: null };
 let cryptoCache = { ts: 0, data: null };
@@ -16,7 +16,7 @@ app.get("/api/metals", async (req, res) => {
     if (metalsCache.data && now - metalsCache.ts < 60000) return res.json(metalsCache.data);
 
     const response = await fetch(
-      `https://api.metalpriceapi.com/v1/latest?api_key=${METALS_KEY}&base=USD&symbols=XAU,XAG,PKR,EUR,GBP`
+      `https://api.metalpriceapi.com/v1/latest?api_key=$123188317eb03ef0d291147ee03ca28f&base=USD&symbols=XAU,XAG,PKR,EUR,GBP`
     );
     const data = await response.json();
     metalsCache = { ts: now, data };
