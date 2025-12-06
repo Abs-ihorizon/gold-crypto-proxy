@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 
-const METALS_KEY = process.env.123188317eb03ef0d291147ee03ca28f;
+const METALS_KEY = process.env.METAL_API_KEY;
 
 let metalsCache = { ts: 0, data: null };
 let cryptoCache = { ts: 0, data: null };
