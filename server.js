@@ -10,6 +10,12 @@ const METALS_KEY = process.env.METALS_API_KEY;
 let metalsCache = { ts: 0, data: null };
 let cryptoCache = { ts: 0, data: null };
 
+// Root route
+app.get("/", (req, res) => {
+  res.send("✅ Proxy Server is Running. Use /api/metals or /api/crypto");
+});
+
+// Metals route
 app.get("/api/metals", async (req, res) => {
   try {
     const now = Date.now();
@@ -26,6 +32,7 @@ app.get("/api/metals", async (req, res) => {
   }
 });
 
+// Crypto route
 app.get("/api/crypto", async (req, res) => {
   try {
     const response = await fetch(
