@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
   res.send("✅ Gold & Silver Worldwide Currency Proxy Running");
 });
 
-// ✅ Metals + All Currency Conversion
+// ✅ Gold + Silver + All Currencies (VERCEL SAFE)
 app.get("/api/metals", async (req, res) => {
   try {
     const now = Date.now();
@@ -20,15 +20,14 @@ app.get("/api/metals", async (req, res) => {
       return res.json(cache.data);
     }
 
-    // ✅ Gold & Silver USD Prices
-    const goldRes = await fetch("https://api.metals.live/v1/spot/gold");
-    const silverRes = await fetch("https://api.metals.live/v1/spot/silver");
+    // ✅ Gold & Silver USD (CoinGecko - SAFE)
+    const metalRes = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=gold,silver&vs_currencies=usd"
+    );
+    const metalData = await metalRes.json();
 
-    const goldData = await goldRes.json();   // [{ price: 2345 }]
-    const silverData = await silverRes.json(); // [{ price: 27 }]
-
-    const goldUSD = goldData[0].price;    // per ounce
-    const silverUSD = silverData[0].price;
+    const goldUSD = metalData.gold.usd;     // per ounce approx
+    const silverUSD = metalData.silver.usd;
 
     // ✅ Currency Rates (FREE)
     const fxRes = await fetch("https://api.exchangerate.host/latest?base=USD");
@@ -36,7 +35,6 @@ app.get("/api/metals", async (req, res) => {
 
     const gram = 31.1034768;
 
-    // ✅ Convert into multiple currencies
     const result = {
       updated: new Date().toUTCString(),
       gold_per_gram: {},
@@ -60,7 +58,6 @@ app.get("/api/metals", async (req, res) => {
   }
 });
 
-// ✅ Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("✅ Worldwide Gold & Silver Proxy Running on", PORT);
