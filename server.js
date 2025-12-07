@@ -3,74 +3,65 @@ import fetch from "node-fetch";
 import cors from "cors";
 
 const app = express();
-app.use(cors()); // ✅ Allow cross-origin requests
+app.use(cors());
 
-// Environment variable for Metals API key
-const METALS_KEY = process.env.METALS_API_KEY;
+let cache = { ts: 0, data: null };
 
-// Simple caching to reduce API calls
-let metalsCache = { ts: 0, data: null };
-let cryptoCache = { ts: 0, data: null };
-
-// Root route
+// ✅ Root
 app.get("/", (req, res) => {
-  res.send("✅ Proxy Server is Running. Use /api/metals or /api/crypto");
+  res.send("✅ Gold & Silver Worldwide Currency Proxy Running");
 });
 
-// Metals route
+// ✅ Metals + All Currency Conversion
 app.get("/api/metals", async (req, res) => {
   try {
     const now = Date.now();
-
-    // Return cached data if less than 60 seconds old
-    if (metalsCache.data && now - metalsCache.ts < 60000) {
-      return res.json(metalsCache.data);
+    if (cache.data && now - cache.ts < 60000) {
+      return res.json(cache.data);
     }
 
-    const response = await fetch(
-      `https://api.metalpriceapi.com/v1/latest?api_key=${METALS_KEY}&base=USD&symbols=XAU,XAG,PKR,EUR,GBP`
-    );
+    // ✅ Gold & Silver USD Prices
+    const goldRes = await fetch("https://api.metals.live/v1/spot/gold");
+    const silverRes = await fetch("https://api.metals.live/v1/spot/silver");
 
-    if (!response.ok) {
-      throw new Error(`Metals API response not OK: ${response.status}`);
+    const goldData = await goldRes.json();   // [{ price: 2345 }]
+    const silverData = await silverRes.json(); // [{ price: 27 }]
+
+    const goldUSD = goldData[0].price;    // per ounce
+    const silverUSD = silverData[0].price;
+
+    // ✅ Currency Rates (FREE)
+    const fxRes = await fetch("https://api.exchangerate.host/latest?base=USD");
+    const fxData = await fxRes.json();
+
+    const gram = 31.1034768;
+
+    // ✅ Convert into multiple currencies
+    const result = {
+      updated: new Date().toUTCString(),
+      gold_per_gram: {},
+      silver_per_gram: {}
+    };
+
+    for (const [currency, rate] of Object.entries(fxData.rates)) {
+      result.gold_per_gram[currency] = ((goldUSD / gram) * rate).toFixed(2);
+      result.silver_per_gram[currency] = ((silverUSD / gram) * rate).toFixed(2);
     }
 
-    const data = await response.json();
-    metalsCache = { ts: now, data };
-    res.json(data);
+    cache = { ts: now, data: result };
+    res.json(result);
+
   } catch (err) {
-    console.error("Metals fetch error:", err);
-    res.status(500).json({ error: "Metals API failed", details: err.message });
+    console.error("Metals Error:", err);
+    res.status(500).json({
+      error: "Metals conversion failed",
+      details: err.message
+    });
   }
 });
 
-// Crypto route
-app.get("/api/crypto", async (req, res) => {
-  try {
-    const now = Date.now();
-
-    // Return cached data if less than 60 seconds old
-    if (cryptoCache.data && now - cryptoCache.ts < 60000) {
-      return res.json(cryptoCache.data);
-    }
-
-    const response = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,pkr"
-    );
-
-    if (!response.ok) {
-      throw new Error(`Crypto API response not OK: ${response.status}`);
-    }
-
-    const data = await response.json();
-    cryptoCache = { ts: now, data };
-    res.json(data);
-  } catch (err) {
-    console.error("Crypto fetch error:", err);
-    res.status(500).json({ error: "Crypto API failed", details: err.message });
-  }
-});
-
-// Start server
+// ✅ Start Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Proxy running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log("✅ Worldwide Gold & Silver Proxy Running on", PORT);
+});
