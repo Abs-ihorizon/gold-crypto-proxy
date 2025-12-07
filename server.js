@@ -7,12 +7,10 @@ app.use(cors());
 
 let cache = { ts: 0, data: null };
 
-// ✅ Root
 app.get("/", (req, res) => {
   res.send("✅ Gold & Silver Worldwide Currency Proxy Running");
 });
 
-// ✅ Gold + Silver + All Currencies (VERCEL SAFE)
 app.get("/api/metals", async (req, res) => {
   try {
     const now = Date.now();
@@ -20,18 +18,26 @@ app.get("/api/metals", async (req, res) => {
       return res.json(cache.data);
     }
 
-    // ✅ Gold & Silver USD (CoinGecko - SAFE)
+    // ✅ 1) Gold & Silver USD Price
     const metalRes = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=gold,silver&vs_currencies=usd"
     );
     const metalData = await metalRes.json();
 
-    const goldUSD = metalData.gold.usd;     // per ounce approx
+    if (!metalData.gold || !metalData.silver) {
+      throw new Error("Gold/Silver data missing from CoinGecko");
+    }
+
+    const goldUSD = metalData.gold.usd;
     const silverUSD = metalData.silver.usd;
 
-    // ✅ Currency Rates (FREE)
-    const fxRes = await fetch("https://api.exchangerate.host/latest?base=USD");
+    // ✅ 2) Currency Conversion
+    const fxRes = await fetch("https://open.er-api.com/v6/latest/USD");
     const fxData = await fxRes.json();
+
+    if (!fxData.rates) {
+      throw new Error("Currency API did not return rates");
+    }
 
     const gram = 31.1034768;
 
